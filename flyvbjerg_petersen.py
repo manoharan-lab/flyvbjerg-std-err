@@ -1,22 +1,23 @@
 # Copyright 2014, Jerome Fung, Rebecca W. Perry, Thomas G. Dimiduk
 #
-# std-err-flyvbjerg is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# flyvbjerg_petersen_std_err is free software: you can redistribute it 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation, either version 3 of the 
+# License, or (at your option) any later version.
 #
-# HoloPy is distributed in the hope that it will be useful,
+# This code is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with std-err-flyvbjerg.  If not, see <http://www.gnu.org/licenses/>.
+# along with flyvbjerg_petersen_std_err.  If not, see 
+# <http://www.gnu.org/licenses/>.
 
 '''
-Apply Flyvbjerg-Petersen blocking method for estimating the standard
-error on the mean value of a physical quantity from a (possibly correlated)
-time series of experimentally determined values.
+Apply Flyvbjerg-Petersen block decorrelation method for estimating the 
+standard error on the mean of a (possibly correlated) time series of 
+values.
 
 .. moduleauthor:: Jerome Fung <jerome.fung@gmail.com>
 .. moduleauthor:: Rebecca W. Perry <rperry@seas.harvard.edu>
@@ -36,8 +37,8 @@ def block_transformation(series):
     Parameters
     ----------
     series : ndarray
-        Things we want to average: e.g. squared dispalcements for a Browning
-        random walk
+        Things we want to average: e.g. squared displacements to calculate the
+        mean squared displacement of a Brownian particle.
 
     Returns
     -------
@@ -56,7 +57,7 @@ def block_transformation(series):
 
 def calculate_blocked_variances(series, npmin = 15):
     """
-    Compute the a series of blocks and variances.
+    Compute a series of blocks and variances.
 
     Parameters
     ----------
@@ -68,8 +69,8 @@ def calculate_blocked_variances(series, npmin = 15):
 
     Returns
     -------
-    output_var, stderr : ndarray
-        The variance and stderr at each blocking level
+    output_var, var_stderr : ndarray
+        The variance and stderr of the variance at each blocking level
 
     Notes
     -----
@@ -80,24 +81,29 @@ def calculate_blocked_variances(series, npmin = 15):
     n_steps = series.size
 
     def var(d, n):
+        # see eq. 27 of FP paper
         return d.var()/(n-1)
-    def stderr(n):
+    def stderr_var(n):
+        # see eq. 27 of FP paper
         return np.sqrt(2./(n-1))
 
     output_var = np.array([var(series, n_steps)]) # initialize
-    var_stderr = np.array([stderr(n_steps)])
+    var_stderr = np.array([stderr_var(n_steps)])
 
     while n_steps > npmin:
         series = block_transformation(series)
         n_steps = series.size
+        # TODO: precompute size of output_var and var_stderr from n_steps
+        # rather than appending
         output_var = np.append(output_var, var(series, n_steps))
-        var_stderr = np.append(var_stderr, stderr(n_steps))
+        var_stderr = np.append(var_stderr, stderr_var(n_steps))
 
     return output_var, var_stderr
 
 def detect_fixed_point(fp_var, fp_sev, full_output = False):
     """
-    Find if a set of blocks converges to a fixed point.
+    Find whether the block averages decorrelate the data series to a fixed
+    point.
 
     Parameters
     ----------
