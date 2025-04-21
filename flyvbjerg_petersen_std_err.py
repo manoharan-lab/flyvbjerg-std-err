@@ -51,7 +51,7 @@ def block_transformation(series):
 
     """
     n_steps = series.size
-    n_steps_p = np.floor(n_steps/2.)
+    n_steps_p = np.floor(n_steps/2.).astype('int')
     output = 0.5 * (series[::2][:n_steps_p] + series[1::2][:n_steps_p])
     return output
 
